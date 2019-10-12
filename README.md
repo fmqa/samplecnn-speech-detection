@@ -21,7 +21,7 @@ Training samples are continously produced through randomized window sampling. Th
 Does it work? Seemingly, yes: Using the 10.10.2019 recording of _Schöne Töne_ as testing material, the discriminator correctly recognizes the ~5-minute long news block:
 
 ```
-python3 -B discriminator st_20191010.wav 2>/dev/null
+$ python3 -B discriminator st_20191010.wav 2>/dev/null
 00:00:00 🎶 (0.000)
 00:00:01 🎶 (0.000)
 00:00:02 🎶 (0.000)
