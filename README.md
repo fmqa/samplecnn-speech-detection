@@ -14,7 +14,7 @@ We train a [SampleCNN](https://arxiv.org/abs/1703.01789) on the [GTZAN Music-Spe
 
 SampleCNN is trained with the recommended dropout value of 0.5; A cyclic learning rate scheduler (`CyclicLR`) is used to cycle through the range of learning rates and momentum hyperparameters for SGD.
 
-Training samples are continously produced through randomized window sampling. The model receives 59049 samples (around ~3.7s @ 16 kHz) as an input. Each track in GTZAN is 30s long. With 120 tracks, the total number of example windows is `((16000*30)-59049+1)*120 = 50514240`. However, training for 4000 batches (with e.g. 32 sample windows per batch, about 128000 example in total) is sufficient to produce a usable model.
+Training samples are continously produced through randomized window sampling. The model receives 59049 samples (around ~3.7s @ 16 kHz) as an input. Each track in GTZAN is 30s long. With 120 tracks, the total number of example windows is `((16000*30)-59049+1)*120 = 50514240`. However, training for 4000 batches (with e.g. 32 sample windows per batch, about 128000 examples in total) is sufficient to produce a usable model.
 
 ## Test
 
