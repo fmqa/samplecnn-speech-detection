@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+
+import os
+import tempfile
+import ffmpeg
+import argparse
+import librosa
+import torch
+from samplecnn import SampleCNN
+
+MICRO = "\U0001F3A4"
+MUSIC = "\U0001F3B6"
+
+SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+MODEL_PATH = os.path.join(SCRIPT_PATH, "model-gztan-speech-music-4000.pth")
+
+def strfdelta(t):
+    d = {}
+    d["h"], rem = divmod(t, 3600)
+    d["m"], d["s"] = divmod(rem, 60)
+    return d
+
+parser = argparse.ArgumentParser(description="Speech/Music discriminator.")
+parser.add_argument("-a", "--alpha", type=float, default=0.5, help="Cutoff point (0..1)")
+parser.add_argument("audiofile", help="Audio file.")
+
+args = parser.parse_args()
+
+with tempfile.TemporaryDirectory(suffix="-discriminator") as tmpdir:
+    # Convert input to proper format (16 kHz, mono)
+    output = os.path.join(tmpdir, "16khz.wav")
+    (
+        ffmpeg.input(args.audiofile)
+              .output(output, format="wav", acodec="pcm_s16le", ac=1, ar="16k")
+              .overwrite_output()
+              .run()
+    )
+    # Instantiate CNN
+    net = SampleCNN()
+    net.load_state_dict(torch.load(MODEL_PATH))
+    net.eval()
+    with torch.no_grad():
+        # Iterate through frames
+        for i, frame in enumerate(map(torch.Tensor, librosa.core.stream(output, 1, 59049, 16000, fill_value=0))):
+            y = net(frame.reshape(1, -1))
+            y = y.item()
+            print("{h:02d}:{m:02d}:{s:02d}".format(**strfdelta(i)), "{} ({:.3f})".format(MICRO if y > args.alpha else MUSIC, y))
+
+
+
