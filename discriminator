@@ -12,7 +12,7 @@ MICRO = "\U0001F3A4"
 MUSIC = "\U0001F3B6"
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
-MODEL_PATH = os.path.join(SCRIPT_PATH, "model-gztan-speech-music-4000.pth")
+MODEL_PATH = os.path.join(SCRIPT_PATH, "model-gztan-speech-music-20000.pth")
 
 def strfdelta(t):
     d = {}

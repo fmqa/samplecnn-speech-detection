@@ -3,7 +3,7 @@ WGET ?= wget
 TAR ?= tar
 CP ?= cp
 RM ?= rm -f
-LIMIT ?= 4000
+LIMIT ?= 20000
 
 export LIMIT
 
