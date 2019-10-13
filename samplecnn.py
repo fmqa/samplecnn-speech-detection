@@ -123,76 +123,118 @@ class Dataset(data.IterableDataset):
             # Choose random window from selected sample.
             i = random.randrange(self.window, len(data)) - self.window
             # Yield pool index {0, 1} and sample window.
-            yield k, data[i:i+self.window]
+            yield data[i:i+self.window], k
+
+def trainer(net, criterion, optimizer, scheduler):
+    """Training loop."""
+    result = None
+    while True:
+        net.zero_grad()
+        X, y = (yield result)
+        loss = criterion(net(X).flatten(), y.to(torch.float))
+        result = float(loss.item())
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
 
 if __name__ == "__main__":
     import os
     import math
+    #
+    # Constants
+    #
+    MODEL_PATH = "model-gztan-speech-music.pth"
+    OPTIM_PATH = "opt-gztan-speech-music.pth"
+    SCHED_PATH = "sched-gztan-speech-music.pth"
+    COUNT_PATH = "batches-gztan-speech-music.txt"
+    #
     # Iteration limit.
+    #
     try:
         iterations = int(os.environ["LIMIT"])
     except KeyError:
         iterations = math.inf
+    #
     # Use GPU if available.
+    #
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print("Device:", device)
+    #
     # Create model, load saved state if available.
+    #
     net = SampleCNN()
     try:
-        net.load_state_dict(torch.load("model-gztan-speech-music.pth"))
+        net.load_state_dict(torch.load(MODEL_PATH))
     except FileNotFoundError:
         pass
+    #
     # Create optimizer, load saved state if available.
+    #
     optimizer = optim.SGD(params=net.parameters(), lr=0.01)
     try:
-        optimizer.load_state_dict(torch.load("opt-gztan-speech-music.pth"))
+        optimizer.load_state_dict(torch.load(OPTIM_PATH))
     except FileNotFoundError:
         pass
+    #
     # Create cyclic learning rate scheduler, load saved state if available. 
+    #
     scheduler = optim.lr_scheduler.CyclicLR(optimizer=optimizer, base_lr=1e-8, max_lr=0.01)
     try:
-        scheduler.load_state_dict(torch.load("sched-gztan-speech-music.pth"))
+        scheduler.load_state_dict(torch.load(SCHED_PATH))
     except FileNotFoundError:
         pass
+    #
     # Load current batch count from file, or set to 0 if we're training
     # from scratch.
+    #
     try:
-        with open("batches-gztan-speech-music.txt", "r") as fobj:
+        with open(COUNT_PATH, "r") as fobj:
             i = fobj.read()
             i = i.strip()
             if i:
                 i = int(i)
     except (FileNotFoundError, ValueError):
         i = 0
+    #
     # Move model to device.
+    #
     net = net.to(device)
+    #
     # Load dataset, create loader.
+    #
     with os.scandir("music_speech/music_wav") as negdir, os.scandir("music_speech/speech_wav") as posdir:
         dataset = Dataset((f.path for f in posdir), (f.path for f in negdir))
     loader = data.DataLoader(dataset, batch_size=32)
+    #
     # Binary cross-entropy loss.
+    #
     criterion = nn.BCELoss()
+    #
+    # Instantiate trainer coroutine.
+    #
+    tr = trainer(net, criterion, optimizer, scheduler)
+    tr.send(None)
+    #
     # Iterate through batches.
-    for i, (y, X) in enumerate(loader, i + 1):
+    #
+    for i, Xy in enumerate(loader, i + 1):
         try:
-            net.zero_grad()
-            loss = criterion(net(X).flatten(), y.to(torch.float))
-            print("Batch {}: Loss = {}".format(i, loss.item()))
-            loss.backward()
-            optimizer.step()
-            scheduler.step()
+            loss = tr.send(Xy)
+            print("Batch {}: Loss = {}".format(i, loss))
             # Save training state at the end of every CyclicLR cycle.
             if i % 4000 == 0:
-                torch.save(net.state_dict(), "model-gztan-speech-music.pth")
-                torch.save(optimizer.state_dict(), "opt-gztan-speech-music.pth")
-                torch.save(scheduler.state_dict(), "sched-gztan-speech-music.pth")
+                torch.save(net.state_dict(), MODEL_PATH)
+                torch.save(optimizer.state_dict(), OPTIM_PATH)
+                torch.save(scheduler.state_dict(), SCHED_PATH)
         except KeyboardInterrupt:
             break
         if i >= iterations:
             break
+    #
     # Save batch index and current training state.
-    with open("batches-gztan-speech-music.txt", "w") as fobj:
+    #
+    with open(COUNT_PATH, "w") as fobj:
         fobj.write(str(i))
-    torch.save(net.state_dict(), "model-gztan-speech-music.pth")
-    torch.save(optimizer.state_dict(), "opt-gztan-speech-music.pth")
-    torch.save(scheduler.state_dict(), "sched-gztan-speech-music.pth")
+    torch.save(net.state_dict(), MODEL_PATH)
+    torch.save(optimizer.state_dict(), OPTIM_PATH)
+    torch.save(scheduler.state_dict(), SCHED_PATH)
