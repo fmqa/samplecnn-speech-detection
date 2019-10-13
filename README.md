@@ -1,6 +1,6 @@
 # Speech/Music Discrimination using SampleCNN
 
-![SampleCNN Architecture](images/samplecnn.png)
+![SampleCNN Architecture](assets/samplecnn.png)
 
 Experimenting with [sample-level CNNs](https://arxiv.org/abs/1703.01789) for Speech/Music discrimination.
 
