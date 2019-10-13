@@ -55,7 +55,7 @@ $ python3 -B discriminator st_20191010.wav 2>/dev/null
 
 ## Notes
 
-The resulting model overfits to human speech (which is not disadvantageous in this case). Speech with music in the background is therefore classified as _music_ (which could be the correct decision, depending on who you ask). The sensitivity can be adjusted using the `--alpha` option in the discriminator.
+The resulting model overfits to human speech (which is not disadvantageous in this case). Speech with music in the background is therefore classified as _music_ (which could be the correct decision, depending on who you ask). The threshold can be adjusted using the `--alpha` option in the discriminator.
 
 A trained model is included. However, a Makefile that runs the training workflow and writes the model is provided.
 
