@@ -99,7 +99,7 @@ class SampleCNN(nn.Module):
         out = self.conv8(out)
         out = self.conv9(out)
         out = self.conv10(out)
-        out = self.conv11(out) 
+        out = self.conv11(out)
         out = out.view(x.shape[0], out.size(1) * out.size(2))
         out = self.fc(out)
         out = self.activation(out)
